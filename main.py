@@ -171,11 +171,12 @@ def main() -> int:
 
     if args.copy:
         try:
+            encoding = "utf-16" if sys.platform == "win32" else "utf-8"
             subprocess.run(
                 ["clip.exe"] if sys.platform == "win32" else
                 ["pbcopy"] if sys.platform == "darwin" else
                 ["xclip", "-selection", "clipboard"],
-                input=output.encode(),
+                input=output.encode(encoding),
                 check=True,
             )
         except FileNotFoundError:
