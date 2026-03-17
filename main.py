@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import fnmatch
 import os
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -143,6 +144,7 @@ def main() -> int:
     ap.add_argument("--ignore", action="append", default=[], help="Ignore exact name (repeatable).")
     ap.add_argument("--ignore-glob", action="append", default=[], help="Ignore glob (repeatable).")
     ap.add_argument("--follow-symlinks", action="store_true", help="Follow directory symlinks (cycle-safe).")
+    ap.add_argument("-c", "--copy", action="store_true", help="Copy the output to the clipboard.")
     args = ap.parse_args()
 
     flt = Filters(
@@ -164,7 +166,21 @@ def main() -> int:
         print(f"Error: {e}", file=sys.stderr)
         return 2
 
-    print("\n".join(lines))
+    output = "\n".join(lines)
+    print(output)
+
+    if args.copy:
+        try:
+            subprocess.run(
+                ["clip.exe"] if sys.platform == "win32" else
+                ["pbcopy"] if sys.platform == "darwin" else
+                ["xclip", "-selection", "clipboard"],
+                input=output.encode(),
+                check=True,
+            )
+        except FileNotFoundError:
+            print("Warning: clipboard tool not found.", file=sys.stderr)
+
     return 0
 
 
