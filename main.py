@@ -171,14 +171,20 @@ def main() -> int:
 
     if args.copy:
         try:
-            encoding = "utf-16" if sys.platform == "win32" else "utf-8"
-            subprocess.run(
-                ["clip.exe"] if sys.platform == "win32" else
-                ["pbcopy"] if sys.platform == "darwin" else
-                ["xclip", "-selection", "clipboard"],
-                input=output.encode(encoding),
-                check=True,
-            )
+            if sys.platform == "win32":
+                cmd = ["clip.exe"]
+                encoding = "utf-16"
+            elif sys.platform == "darwin":
+                cmd = ["pbcopy"]
+                encoding = "utf-8"
+            elif os.environ.get("WAYLAND_DISPLAY"):
+                cmd = ["wl-copy"]
+                encoding = "utf-8"
+            else:
+                cmd = ["xclip", "-selection", "clipboard"]
+                encoding = "utf-8"
+            subprocess.run(cmd, input=output.encode(encoding), check=True)
+            print("Copied to clipboard.", file=sys.stderr)
         except FileNotFoundError:
             print("Warning: clipboard tool not found.", file=sys.stderr)
 
