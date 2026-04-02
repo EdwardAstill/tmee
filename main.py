@@ -41,7 +41,7 @@ def should_ignore(path: Path, flt: Filters) -> bool:
         return True
     if matches_any_glob(name, flt.ignore_globs):
         return True
-    if flt.pattern and not fnmatch.fnmatch(name, flt.pattern):
+    if flt.pattern and not path.is_dir() and not fnmatch.fnmatch(name, flt.pattern):
         return True
     if flt.dirs_only and not path.is_dir():
         return True
@@ -145,7 +145,12 @@ def main() -> int:
     ap.add_argument("--ignore-glob", action="append", default=[], help="Ignore glob (repeatable).")
     ap.add_argument("--follow-symlinks", action="store_true", help="Follow directory symlinks (cycle-safe).")
     ap.add_argument("-c", "--copy", action="store_true", help="Copy the output to the clipboard.")
+    ap.add_argument("--version", action="version", version="%(prog)s 0.1.0")
     args = ap.parse_args()
+
+    if args.max_depth is not None and args.max_depth < 0:
+        print("Error: --max-depth must be >= 0.", file=sys.stderr)
+        return 2
 
     flt = Filters(
         show_hidden=args.show_hidden, # This will be True unless --hide-dot is used
@@ -185,8 +190,8 @@ def main() -> int:
                 encoding = "utf-8"
             subprocess.run(cmd, input=output.encode(encoding), check=True)
             print("Copied to clipboard.", file=sys.stderr)
-        except FileNotFoundError:
-            print("Warning: clipboard tool not found.", file=sys.stderr)
+        except (FileNotFoundError, subprocess.CalledProcessError):
+            print("Warning: clipboard tool not found or failed.", file=sys.stderr)
 
     return 0
 
